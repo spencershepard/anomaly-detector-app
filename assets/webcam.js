@@ -1,3 +1,13 @@
+getImageFromCamera = () => {
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL("image/jpeg");
+    console.log("Image captured from video");
+    console.log("Image data URL:", imageData);
+    return imageData;
+};
+
 insertWebcam = () => {
     console.log("insertWebcam called");
 
@@ -42,11 +52,7 @@ insertWebcam = () => {
         
         showOverlay("📸 Capturing...", "overlay-capture", 500);
         
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const imageData = canvas.toDataURL("image/jpeg");
+        const imageData = getImageFromCamera();
         console.log("Image captured from video, sending to server...");
 
         fetch("/capture-frame", {

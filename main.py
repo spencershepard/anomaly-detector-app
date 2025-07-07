@@ -1,10 +1,16 @@
 from flask import Flask, request, jsonify
 import dash
 from dash import html, dcc, callback, Input, Output
+import dash_bootstrap_components as dbc
+from dash_bootstrap_templates import load_figure_template
 import models
+import time
+
+# loads the "darkly" template and sets it as the default
+load_figure_template("darkly")
 
 server = Flask(__name__) # Consider removing if we want pure Dash
-app = dash.Dash(__name__, server=server)
+app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.DARKLY])
 
 choices = models.get_model_choices()
 
@@ -42,6 +48,7 @@ captured_frame = None
     prevent_initial_call=True
 )
 def update_capture_panel(n_clicks):
+    time.sleep(0.01)  # Wait for javascript to process first
     global captured_frame
     if captured_frame:
         print("Captured frame exists, updating panel style")
@@ -63,6 +70,21 @@ def discard_capture(n_clicks):
         return [{"display": "none"}, {"display": "block"}]
     return dash.no_update
 
+# @callback(
+#     Output('capture-panel', 'style'),
+#     Output('live-feed', 'style'),
+#     Input('validate-btn', 'n_clicks'),
+#     prevent_initial_call=True
+# )
+# def validate_capture(n_clicks):
+#     global captured_frame
+#     if captured_frame:
+#         print("Validating capture")
+#         # Here you would typically send the captured frame to a validation endpoint
+#         # For now, we just reset the captured frame
+#         captured_frame = None
+#         return [{"display": "none"}, {"display": "block"}]
+#     return dash.no_update
 
 @server.route('/capture-frame', methods=['POST'])
 def capture_frame():
