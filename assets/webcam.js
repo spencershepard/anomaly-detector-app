@@ -2,7 +2,7 @@ getImageFromCamera = () => {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL("image/jpeg");
+    const imageData = canvas.toDataURL("image/jpeg"); // suitable for small images
     console.log("Image captured from video");
     console.log("Image data URL:", imageData);
     return imageData;
@@ -83,6 +83,19 @@ insertWebcam = () => {
     document.getElementById("classify-btn").addEventListener("click", () => {
         console.log("Classify button clicked");
         showOverlay("🔍 Classifying...", "overlay-classify");
+    });
+
+    // Add normal data button event listener
+    document.getElementById("normal-data-btn").addEventListener("click", () =>
+    {
+        console.log("Normal data button clicked");
+        showOverlay("📊 Submitting normal data...", "overlay-submit-data");
+    });
+    
+    // Add anomaly data button event listener
+    document.getElementById("anomaly-data-btn").addEventListener("click", () => {
+        console.log("Anomaly data button clicked");     
+        showOverlay("⚠️ Submitting anomaly data...", "overlay-submit-data");
     });
 };
 

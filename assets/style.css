@@ -45,6 +45,20 @@
     }
 }
 
+@keyframes submitDataFlash {
+    0% {
+        background-color: rgba(255, 255, 255, 1);
+        transform: scale(1.1);
+    }
+    50% {
+        background-color: rgba(0, 123, 255, 0.3);
+    }
+    100% {
+        background-color: rgba(0, 123, 255, 0.8);
+        transform: scale(1);
+    }
+}
+
 .video-wrapper {
     position: relative;
     display: inline-block;
@@ -77,6 +91,11 @@
 .overlay-classify {
     background-color: rgba(0, 123, 255, 0.8);
     animation: classifyFlash 0.5s ease-out;
+}
+
+.overlay-submit-data {
+    background-color: rgba(0, 123, 255, 0.8);
+    animation: submitDataFlash 0.5s ease-out;
 }
 
 .video-element {
