@@ -1,9 +1,25 @@
 getImageFromCamera = () => {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL("image/jpeg"); // suitable for small images
-    console.log("Image captured from video");
+    const video = document.getElementById("video");
+
+    canvas.width = 512;
+    canvas.height = 512;
+
+    // Get video dimensions
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+
+    // Calculate the largest centered square in the video
+    const side = Math.min(videoWidth, videoHeight);
+    const sx = (videoWidth - side) / 2;
+    const sy = (videoHeight - side) / 2;
+
+    // Draw the center-cropped square to the canvas, scaling to fit
+    ctx.drawImage(video, sx, sy, side, side, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/jpeg");
+    console.log("Image captured from video (center-cropped 640x640)");
     console.log("Image data URL:", imageData);
     return imageData;
 };
@@ -21,7 +37,7 @@ insertWebcam = () => {
             <video id="video" autoplay playsinline class="video-element"></video>
             <div id="action-overlay" class="action-overlay"></div>
         </div>
-        <canvas id="canvas" width="640" height="480" class="canvas-hidden"></canvas>
+        <canvas id="canvas" width="1280" height="720" class="canvas-hidden"></canvas>
     `;
 
     const video = document.getElementById("video");

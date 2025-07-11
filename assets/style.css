@@ -68,8 +68,8 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 640px;
-    height: 480px;
+    width: 512px;
+    height: 512px;
     display: none;
     justify-content: center;
     align-items: center;
@@ -99,8 +99,9 @@
 }
 
 .video-element {
-    width: 640px;
-    height: 480px;
+    width: 512px;
+    height: 512px;
+    object-fit: cover;
 }
 
 .canvas-hidden {
