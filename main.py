@@ -7,6 +7,7 @@ import models
 import s3data
 import time
 import os
+import requests 
 
 # loads the "darkly" template and sets it as the default
 load_figure_template("darkly")
@@ -18,34 +19,56 @@ choices = models.get_model_choices()
 
 
 app.layout = html.Div([
-    dbc.Container([
-        html.H2("Webcam Capture with Dash", className="mb-4 text-center"),
-        dbc.Row([
-            dbc.Col([
-                dcc.Dropdown(choices, 'Widget 3', id='model-selection', className="mb-3"),
-            ], width=12)
-        ]),
-        html.Div(id="live-feed", children=[
-            html.Div(id="video-container", className="mb-3"),
-            dbc.ButtonGroup([
-                dbc.Button("Classify", id="classify-btn", color="primary", className="me-2"),
-                dbc.Button("Validate", id="validate-btn", color="success", className="me-2"),
-                dbc.Button("Capture Frame", id="capture-btn", color="warning"),
-            ], className="d-flex justify-content-center mb-3"),
-        ]),
-        html.Div(id="capture-panel", style={"display": "none"}, children=[
+    dbc.Container( children=[
+        html.Div(id="app-container", style={"width": "512px", "margin": "0 auto", "padding": "0px"},children=[
+            html.H2("Webcam Capture with Dash", id="my-header", className="mb-4 text-center"),
             dbc.Row([
                 dbc.Col([
-                    html.Img(id="captured-image", src="", className="captured-frame img-fluid mb-3"),
-                ], width=12, className="text-center")
+                    dcc.Dropdown(
+                        choices, 
+                        id='model-selection', 
+                        className="mb-3", 
+                        placeholder="Select a model...",
+                        searchable=False,
+                        clearable=True,
+                        closeOnSelect=True,
+                        persistence=True,
+                        persistence_type="session",
+                    )
+                ], width=12)
             ]),
-            dbc.ButtonGroup([
-                dbc.Button("Normal", id="normal-data-btn", color="success", className="me-2"),
-                dbc.Button("Anomaly", id="anomaly-data-btn", color="danger", className="me-2"),
-                dbc.Button("Discard", id="discard-btn", color="secondary"),
-            ], className="d-flex justify-content-center"),
+            html.Div(id="live-feed", children=[
+                html.Div(id="video-container", className="mb-3"),
+                dbc.ButtonGroup([
+                    dbc.Button("Classify", id="classify-btn", color="primary", className="me-2"),
+                    dbc.Button("Validate", id="validate-btn", color="success", className="me-2"),
+                    dbc.Button("Capture Frame", id="capture-btn", color="warning"),
+                ], className="d-flex justify-content-center mb-3"),
+            ]),
+            html.Div(id="capture-panel", style={"display": "none"}, children=[
+                dbc.Row([
+                    dbc.Col([
+                        html.Img(id="captured-image", src="", className="captured-frame mb-3"),
+                    ], width=12, className="text-center")
+                ]),
+                dbc.ButtonGroup([
+                    dbc.Button("Normal", id="normal-data-btn", color="success", className="me-2"),
+                    dbc.Button("Anomaly", id="anomaly-data-btn", color="danger", className="me-2"),
+                    dbc.Button("Discard", id="discard-btn", color="secondary"),
+                ], className="d-flex justify-content-center"),
+            ]),
+            html.Div(id="result-panel", style={"display": "none"}, children=[
+                dbc.Row([
+                    dbc.Col([
+                        html.Img(id="result-image", src="", className="result-frame mb-3"),
+                    ], width=12, className="text-center")
+                ]),
+                dbc.ButtonGroup([
+                    dbc.Button("Dismiss", id="dismiss-result-btn", color="secondary"),
+                ], className="d-flex justify-content-center"),
+            ]),
         ]),
-    ], fluid=True, className="py-4"),
+    ], fluid=False, className="py-4"),
     
     html.Script(src="/assets/webcam.js"),
 
@@ -54,22 +77,28 @@ app.layout = html.Div([
 captured_frame = None
 
 def reset_to_live_feed():
-    """Helper function to return to live feed view"""
-    return [{"display": "none"}, {"display": "block"}]
+    print("Resetting to live feed")
+    return [{"display": "none"}, {"display": "block"}, {"display": "none"}]
 
 def show_capture_panel():
-    """Helper function to show capture panel"""
-    return [{"display": "block"}, {"display": "none"}]
+    print("Showing capture panel")
+    return [{"display": "block"}, {"display": "none"}, {"display": "none"}]
+
+def show_result_panel():
+    print("Showing result panel")
+    return [{"display": "none"}, {"display": "none"}, {"display": "block"}]
 
 @callback(
     [Output("capture-panel", "style"),
-     Output("live-feed", "style")],
+     Output("live-feed", "style"),
+     Output("result-panel", "style")],
     [Input("capture-btn", "n_clicks"),
      Input("discard-btn", "n_clicks"),
+     Input("classify-btn", "n_clicks"),
      Input("validate-btn", "n_clicks")],
     prevent_initial_call=True
 )
-def handle_panel_visibility(capture_clicks, discard_clicks, validate_clicks):
+def handle_panel_visibility(capture_clicks, discard_clicks, validate_clicks, classify_clicks):
     global captured_frame
     
     ctx = dash.callback_context
@@ -94,15 +123,27 @@ def handle_panel_visibility(capture_clicks, discard_clicks, validate_clicks):
     elif triggered_id == "validate-btn":
         if captured_frame:
             print("Validating capture")
-            # Here you would typically send the captured frame to a validation endpoint
             captured_frame = None
             return reset_to_live_feed()
-    
+        
+    elif triggered_id == "classify-btn":
+        if captured_frame:
+            print("Classifying capture")
+            try:
+                resp = requests.post(
+                    "http://localhost:8000/predict",
+                    json={"image": captured_frame}
+                )
+                print("Response:", resp.json())
+            except Exception as e:
+                print("Error:", e)
+            return show_result_panel()
+
     return dash.no_update
 
 @callback(
     [Output("capture-panel", "style", allow_duplicate=True),
-     Output("live-feed", "style", allow_duplicate=True)],
+     Output("live-feed", "style", allow_duplicate=True),],
     [Input("normal-data-btn", "n_clicks"),
      Input("anomaly-data-btn", "n_clicks")],
     prevent_initial_call=True
