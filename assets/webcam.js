@@ -95,6 +95,10 @@ insertWebcam = () => {
     document.getElementById("validate-btn").addEventListener("click", () => {
         console.log("Validate button clicked");
         showOverlay("✅ Validating...", "overlay-validate");
+        
+        const imageData = getImageFromCamera();
+        console.log("Image captured from video, sending to server for validation...");
+        sendImageToServer(imageData);
     });
 
     // Add classify button event listener

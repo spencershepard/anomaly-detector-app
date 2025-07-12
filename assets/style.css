@@ -3,6 +3,11 @@
     border-radius: 5px; 
 }
 
+.result-frame {
+    border: 5px dashed #4CAF50; 
+    border-radius: 5px; 
+}
+
 @keyframes captureFlash {
     0% {
         background-color: rgba(255, 255, 255, 1);
