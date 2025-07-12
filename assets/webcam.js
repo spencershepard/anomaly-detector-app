@@ -19,9 +19,26 @@ getImageFromCamera = () => {
     ctx.drawImage(video, sx, sy, side, side, 0, 0, canvas.width, canvas.height);
 
     const imageData = canvas.toDataURL("image/jpeg");
-    console.log("Image captured from video (center-cropped 640x640)");
-    console.log("Image data URL:", imageData);
     return imageData;
+};
+
+sendImageToServer = (imageData) => {
+    fetch("/capture-frame", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: imageData })
+        })
+        .then(res => {
+            console.log("Received response");
+            return res.json();
+        })
+        .then(data => {
+            console.log("Server response data:", data);
+            document.getElementById("captured-image").src = imageData;
+        })
+        .catch(err => {
+            console.error("Error during fetch/upload:", err);
+        });
 };
 
 insertWebcam = () => {
@@ -71,22 +88,7 @@ insertWebcam = () => {
         const imageData = getImageFromCamera();
         console.log("Image captured from video, sending to server...");
 
-        fetch("/capture-frame", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: imageData })
-        })
-        .then(res => {
-            console.log("Received response from /upload-frame");
-            return res.json();
-        })
-        .then(data => {
-            console.log("Server response data:", data);
-            document.getElementById("captured-image").src = imageData;
-        })
-        .catch(err => {
-            console.error("Error during fetch/upload:", err);
-        });
+        sendImageToServer(imageData);
     });
 
     // Add validate button event listener
@@ -99,6 +101,9 @@ insertWebcam = () => {
     document.getElementById("classify-btn").addEventListener("click", () => {
         console.log("Classify button clicked");
         showOverlay("🔍 Classifying...", "overlay-classify");
+        const imageData = getImageFromCamera();
+        console.log("Image captured from video, sending to server for classification...");
+        sendImageToServer(imageData);
     });
 
     // Add normal data button event listener
