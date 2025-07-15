@@ -18,8 +18,6 @@ load_figure_template("darkly")
 server = Flask(__name__) 
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.DARKLY])
 
-choices = models.get_model_choices("name LIKE '%Anomaly'")
-
 
 app.layout = html.Div([
     dbc.Container( children=[
@@ -28,7 +26,7 @@ app.layout = html.Div([
             dbc.Row([
                 dbc.Col([
                     dcc.Dropdown(
-                        choices, 
+                        options=[], # populated via callback
                         id='model-selection', 
                         className="mb-3", 
                         placeholder="Select a validation model...",
@@ -107,6 +105,15 @@ def show_classification_result_panel():
 def show_validation_result_panel():
     print("Showing validation result panel")
     return [{"display": "none"}, {"display": "none"}, {"display": "none"}, {"display": "block"}]
+
+# On page reload
+@callback(
+    Output('model-selection', 'options'),
+    Input('app-container', 'children')
+)
+def update_model_choices(_):
+    """Update model choices whenever the page loads"""
+    return models.get_model_choices("name LIKE '%Anomaly'")
 
 @callback(
     [Output("capture-panel", "style"),
@@ -210,14 +217,19 @@ def handle_panel_visibility(capture_clicks, discard_clicks, classify_clicks, val
      Output("classification-result-panel", "style", allow_duplicate=True),
      Output("validation-result-panel", "style", allow_duplicate=True)],
     [Input("normal-data-btn", "n_clicks"),
-     Input("anomaly-data-btn", "n_clicks")],
+     Input("anomaly-data-btn", "n_clicks"),
+     Input("model-selection", "value")],
     prevent_initial_call=True
 )
-def handle_data_uploads(normal_clicks, anomaly_clicks):
+def handle_data_uploads(normal_clicks, anomaly_clicks, selected_model):
     global captured_frame
     
     ctx = dash.callback_context
     if not ctx.triggered or not captured_frame:
+        return dash.no_update
+    
+    if not selected_model:
+        print("No model selected for data upload")
         return dash.no_update
     
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -225,21 +237,25 @@ def handle_data_uploads(normal_clicks, anomaly_clicks):
     if triggered_id == "normal-data-btn":
         category = 'good'
         prefix = 'normal'
+        split = 'train'
         print("Normal data capture")
     elif triggered_id == "anomaly-data-btn":
         category = 'anomaly'
         prefix = 'anomaly'
+        split = 'test'
         print("Anomaly data capture")
     else:
         return dash.no_update
+    
+    main_category = selected_model
     
     # Upload to S3
     image_bytes = s3data.base64_dataurl_to_bytes(captured_frame)
     success = s3data.upload_data_to_s3(
         bucket_name=os.getenv('BUCKET_NAME'),
         local_path=None,
-        main_category='webcam',
-        split='train',
+        main_category=main_category,
+        split=split,
         category=category,
         image_bytes=image_bytes,
         filename=f"{prefix}_{int(time.time())}.jpg"
@@ -266,4 +282,9 @@ def capture_frame():
     return jsonify({"status": "received"})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    if os.getenv('DASH_DEBUG', 'false').lower() == 'true':
+        app.run(debug=True)
+    else:
+        from waitress import serve
+        print("Starting production server with Waitress on port 8050...")
+        serve(server, host='0.0.0.0', port=8050)
