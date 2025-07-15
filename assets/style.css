@@ -112,3 +112,8 @@
 .canvas-hidden {
     display: none;
 }
+
+.Select-menu {
+    background-color: gray;
+    color: white;
+}
